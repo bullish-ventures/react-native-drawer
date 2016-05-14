@@ -279,7 +279,7 @@ export default class Drawer extends Component {
   };
 
   onPanResponderRelease = (e, gestureState) => {
-    if (gestureState.moveX < 125) this.processTapGestures()
+    if (gestureState.moveX < 125) this.processTapGestures(e)
     if (Math.abs(gestureState.dx) < 50 && this._activeTween) return
 
     this.shouldOpenDrawer(gestureState.dx) ? this.open() : this.close()
@@ -320,7 +320,7 @@ export default class Drawer extends Component {
     return true
   };
 
-  processTapGestures = () => {
+  processTapGestures = (e) => {
     if (this._activeTween) return false // disable tap gestures during tween
     if (this.props.acceptTap || (this.props.tapToClose && this._open)) {
       this._open ? this.close() : this.open()
@@ -355,13 +355,21 @@ export default class Drawer extends Component {
 
     let x = e.nativeEvent.pageX
 
-    // Check if you touched the main offset and not the drawer
-    if (this.props.side === 'left' && x > this.getOpenLeft()) {
-      return true;
-    }
-    else if ( this.props.side !== 'left' && x < this.getOpenRight() ) {
-      return true
-    }
+    console.log('OPEN', this._open);
+    console.log('SIDE', this.props.side);
+    console.log('X', x);
+    console.log('OPEN LEFT', this.getOpenLeft());
+    console.log('OPEN RIGHT', this.getOpenRight());
+    console.log('CLOSED LEFT', this.getClosedLeft());
+    console.log('CLOSED RIGHT', this.getClosedRight());
+
+    // When drawer is open check that you touched the main offset and not the drawer
+    if ( this.props.side === 'left' && x > this.getOpenLeft()) return true;
+    if ( this.props.side === 'right' && x < this.getOpenRight() ) return true;
+    
+    // When drawer is closed check that you touched the main offset
+    if ( !this._open && this.props.side === 'left' && x < this.getClosedLeft() ) return true;
+    if ( !this._open && this.props.side === 'right' && x > this.getClosedRight() ) return true;
 
     return false;
   };
@@ -480,8 +488,8 @@ export default class Drawer extends Component {
   /*** DYNAMIC GETTERS ***/
   getOpenLeft = () => this.state.viewport.width - this._offsetOpen;
   getOpenRight = () => this._offsetOpen;
-  getClosedLeft = () => this._offsetClosed;
-  getClosedRight = () => this.state.viewport.width - this._offsetClosed;
+  getClosedLeft = () => this.state.viewport.width - this.getClosedMask();
+  getClosedRight = () => this.getClosedMask();
   getHeight = () => this.state.viewport.height;
   getMainWidth = () => this.state.viewport.width - this._offsetClosed;
   getDrawerWidth = () => this.state.viewport.width - this._offsetOpen;
